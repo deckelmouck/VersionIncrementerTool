@@ -39,7 +39,33 @@ internal class Program
 
         Console.WriteLine($"versionfile: {section["versionfile"]}");
 
-        string csprojFilePath = @"C:\Dev\VersionIncrementerTool\test\test.csproj"; // Path to your .csproj file
+        Console.ReadKey();
+        //return;
+        
+        string csprojFilePath = executionPath; // @"C:\Dev\VersionIncrementerTool\test\test.csproj"; // Path to your .csproj file
+
+        //use only for debugging
+        string csprojlocalTestPath = executionPath + "test/";
+
+
+#if DEBUG
+        csprojFilePath = csprojlocalTestPath;
+        Console.WriteLine($"Local test path: {csprojFilePath}");
+#endif
+
+        //search *.csproj file in the directory
+        string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.AllDirectories);
+        if (files.Length > 0)
+        {
+            csprojFilePath = files[0];
+            Console.WriteLine($"Found .csproj file: {csprojFilePath}");
+        }
+        else
+        {
+            Console.WriteLine("No .csproj file found in the directory.");
+            return;
+        }
+
 
         try
         {
