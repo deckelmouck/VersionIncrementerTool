@@ -1,4 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 
@@ -27,7 +28,12 @@ internal class Program
 
         string executionPath = AppDomain.CurrentDomain.BaseDirectory;
         Console.WriteLine($"Local BaseDirectory path: {executionPath}");
+
+        string callingPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location); 
+        Console.WriteLine($"Calling path: {callingPath}");
         
+        executionPath = callingPath;
+
         string csprojFilePath = GetCsprojFilePath(executionPath);
 
 #if DEBUG
