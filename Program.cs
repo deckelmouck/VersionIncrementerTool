@@ -27,31 +27,23 @@ internal class Program
 
         string executionPath = AppDomain.CurrentDomain.BaseDirectory;
         Console.WriteLine($"Local BaseDirectory path: {executionPath}");
-
-        string filepath = Path.Combine(executionPath, "appsettings.json");
-        Console.WriteLine($"Local appsettings.json path: {filepath}");
-
-        IConfiguration configuration = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .Build();
-
-        IConfigurationSection section = configuration.GetSection("VITSettings");
-
-        Console.WriteLine($"versionfile: {section["versionfile"]}");
-
-        Console.ReadKey();
-        //return;
         
-        string csprojFilePath = executionPath; // @"C:\Dev\VersionIncrementerTool\test\test.csproj"; // Path to your .csproj file
-
-        //use only for debugging
-        string csprojlocalTestPath = executionPath + "test/";
-
+        string csprojFilePath = GetCsprojFilePath(executionPath);
 
 #if DEBUG
+        //use only for debugging
+        Console.WriteLine($"DEBUG: your are in debug mode!");
+        string csprojlocalTestPath = executionPath + "test/";
+
         csprojFilePath = csprojlocalTestPath;
         Console.WriteLine($"Local test path: {csprojFilePath}");
 #endif
+
+        if (csprojFilePath == null)
+        {
+            Console.WriteLine("No .csproj file found in the directory.");
+            return;
+        } 
 
         //search *.csproj file in the directory
         string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.AllDirectories);
@@ -111,5 +103,15 @@ internal class Program
         {
             Console.WriteLine($"An error occurred: {ex.Message}");
         }
+    }
+
+    private static string GetCsprojFilePath(string executionPath)
+    {
+        string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.TopDirectoryOnly);
+        if (files.Length > 0)
+        {
+            return files[0];
+        }
+        return null;
     }
 }
