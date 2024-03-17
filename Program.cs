@@ -31,8 +31,10 @@ internal class Program
 
         string callingPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location); 
         Console.WriteLine($"Calling path: {callingPath}");
+
+        string apppath = AppContext.BaseDirectory;
         
-        executionPath = callingPath;
+        executionPath = apppath;
 
         string csprojFilePath = GetCsprojFilePath(executionPath);
 
