@@ -10,7 +10,6 @@ internal class Program
     {
         Console.WriteLine("Hello there, this is VersionIncrementerTool!");
 
-
         if (args.Length != 1)
         {
             Console.WriteLine("Usage: VersionIncrementer.exe <Major|Minor|Patch>");
@@ -26,16 +25,9 @@ internal class Program
             return;
         }        
 
-        string executionPath = AppDomain.CurrentDomain.BaseDirectory;
+        string executionPath = Environment.CurrentDirectory;
         Console.WriteLine($"Local BaseDirectory path: {executionPath}");
-
-        string callingPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location); 
-        Console.WriteLine($"Calling path: {callingPath}");
-
-        string apppath = AppContext.BaseDirectory;
         
-        executionPath = apppath;
-
         string csprojFilePath = GetCsprojFilePath(executionPath);
 
 #if DEBUG
@@ -47,7 +39,7 @@ internal class Program
         Console.WriteLine($"Local test path: {csprojFilePath}");
 #endif
 
-        if (csprojFilePath == null)
+        if (csprojFilePath == string.Empty)
         {
             Console.WriteLine("No .csproj file found in the directory.");
             return;
@@ -120,6 +112,6 @@ internal class Program
         {
             return files[0];
         }
-        return null;
+        return string.Empty;
     }
 }
