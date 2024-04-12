@@ -35,7 +35,29 @@ internal class Program
         Console.WriteLine($"DEBUG: your are in debug mode!");
         string csprojlocalTestPath = executionPath + "test/";
 
-        csprojFilePath = csprojlocalTestPath;
+        //new
+        string currentDirectory = executionPath;
+        while (true)
+        {
+            var parentDirectory = Directory.GetParent(currentDirectory);
+            if (parentDirectory == null)
+            {
+                Console.WriteLine("No 'test' directory found up the hierarchy.");
+                break;
+            }
+
+            var testDirectory = Path.Combine(parentDirectory.FullName, "test");
+            if (Directory.Exists(testDirectory))
+            {
+                currentDirectory = testDirectory;
+                Console.WriteLine($"Found 'test' directory: {currentDirectory}");
+                break;
+            }
+
+            currentDirectory = parentDirectory.FullName;
+        }
+
+        csprojFilePath = currentDirectory;
         Console.WriteLine($"Local test path: {csprojFilePath}");
 #endif
 
@@ -46,7 +68,7 @@ internal class Program
         } 
 
         //search *.csproj file in the directory
-        string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.AllDirectories);
+        string[] files = Directory.GetFiles(csprojFilePath, "*.csproj", SearchOption.AllDirectories);
         if (files.Length > 0)
         {
             csprojFilePath = files[0];
