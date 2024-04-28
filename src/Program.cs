@@ -1,4 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
@@ -6,13 +7,28 @@ using Microsoft.Extensions.Configuration;
 
 internal class Program
 {
+    private static string execPath = string.Empty;
+
     private static void Main(string[] args)
     {
+        string executionPath = Environment.CurrentDirectory;
+
         Console.WriteLine("Hello there, this is VersionIncrementerTool!");
 
         if (args.Length != 1)
         {
             Console.WriteLine("Usage: VersionIncrementer.exe <Major|Minor|Patch>");
+
+            string foundCsproj = GetCsprojFilePath(executionPath);
+
+            if (foundCsproj != string.Empty)
+            {
+                Console.WriteLine($"Found .csproj file: {foundCsproj}");
+            }
+            else
+            {
+                Console.WriteLine("No .csproj file found in the directory.");
+            }
             return;
         }
 
@@ -25,7 +41,7 @@ internal class Program
             return;
         }        
 
-        string executionPath = Environment.CurrentDirectory;
+        
         Console.WriteLine($"Local BaseDirectory path: {executionPath}");
         
         string csprojFilePath = GetCsprojFilePath(executionPath);
@@ -35,7 +51,29 @@ internal class Program
         Console.WriteLine($"DEBUG: your are in debug mode!");
         string csprojlocalTestPath = executionPath + "test/";
 
-        csprojFilePath = csprojlocalTestPath;
+        //new
+        string currentDirectory = executionPath;
+        while (true)
+        {
+            var parentDirectory = Directory.GetParent(currentDirectory);
+            if (parentDirectory == null)
+            {
+                Console.WriteLine("No 'test' directory found up the hierarchy.");
+                break;
+            }
+
+            var testDirectory = Path.Combine(parentDirectory.FullName, "test");
+            if (Directory.Exists(testDirectory))
+            {
+                currentDirectory = testDirectory;
+                Console.WriteLine($"Found 'test' directory: {currentDirectory}");
+                break;
+            }
+
+            currentDirectory = parentDirectory.FullName;
+        }
+
+        csprojFilePath = currentDirectory;
         Console.WriteLine($"Local test path: {csprojFilePath}");
 #endif
 
@@ -46,7 +84,7 @@ internal class Program
         } 
 
         //search *.csproj file in the directory
-        string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.AllDirectories);
+        string[] files = Directory.GetFiles(csprojFilePath, "*.csproj", SearchOption.AllDirectories);
         if (files.Length > 0)
         {
             csprojFilePath = files[0];
