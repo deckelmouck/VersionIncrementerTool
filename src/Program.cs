@@ -1,4 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
@@ -6,13 +7,28 @@ using Microsoft.Extensions.Configuration;
 
 internal class Program
 {
+    private static string execPath = string.Empty;
+
     private static void Main(string[] args)
     {
+        string executionPath = Environment.CurrentDirectory;
+
         Console.WriteLine("Hello there, this is VersionIncrementerTool!");
 
         if (args.Length != 1)
         {
             Console.WriteLine("Usage: VersionIncrementer.exe <Major|Minor|Patch>");
+
+            string foundCsproj = GetCsprojFilePath(executionPath);
+
+            if (foundCsproj != string.Empty)
+            {
+                Console.WriteLine($"Found .csproj file: {foundCsproj}");
+            }
+            else
+            {
+                Console.WriteLine("No .csproj file found in the directory.");
+            }
             return;
         }
 
@@ -25,7 +41,7 @@ internal class Program
             return;
         }        
 
-        string executionPath = Environment.CurrentDirectory;
+        
         Console.WriteLine($"Local BaseDirectory path: {executionPath}");
         
         string csprojFilePath = GetCsprojFilePath(executionPath);
