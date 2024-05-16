@@ -48,12 +48,12 @@ internal class Program
         
         Console.WriteLine($"Local BaseDirectory path: {executionPath}");
         
-        string csprojFilePath = GetDirectoryOfCsprojFile(executionPath);
+        string csprojDirectoryPath = GetDirectoryOfCsprojFile(executionPath);
+        string csprojFilePath = string.Empty;
 
 #if DEBUG
         //use only for debugging
         Console.WriteLine($"DEBUG: your are in debug mode!");
-        string csprojlocalTestPath = executionPath + "test/";
 
         //new
         string currentDirectory = executionPath;
@@ -77,18 +77,12 @@ internal class Program
             currentDirectory = parentDirectory.FullName;
         }
 
-        csprojFilePath = currentDirectory;
-        Console.WriteLine($"Local test path: {csprojFilePath}");
+        csprojDirectoryPath = currentDirectory;
+        Console.WriteLine($"Local test path: {csprojDirectoryPath}");
 #endif
 
-        if (csprojFilePath == string.Empty)
-        {
-            Console.WriteLine("No .csproj file found in the directory.");
-            return;
-        } 
-
         //search *.csproj file in the directory
-        string[] files = Directory.GetFiles(csprojFilePath, "*.csproj", SearchOption.TopDirectoryOnly);
+        string[] files = Directory.GetFiles(csprojDirectoryPath, "*.csproj", SearchOption.TopDirectoryOnly);
         if (files.Length > 0)
         {
             csprojFilePath = files[0];
@@ -99,7 +93,6 @@ internal class Program
             Console.WriteLine("No .csproj file found in the directory.");
             return;
         }
-
 
         try
         {
@@ -147,17 +140,6 @@ internal class Program
         }
     }
 
-    // private static string GetCsprojFilePath(string executionPath)
-    // {
-    //     string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.TopDirectoryOnly);
-    //     if (files.Length > 0)
-    //     {
-    //         return files[0];
-    //     }
-    //     return string.Empty;
-    // }
-
-    //search the actual directory for a csproj file and not with the filename, if not found, return empty string
     private static string GetDirectoryOfCsprojFile(string executionPath)
     {
         Console.WriteLine($"Searching for .csproj file in the directory: {executionPath}");
@@ -165,7 +147,6 @@ internal class Program
         string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.TopDirectoryOnly);
         if (files.Length > 0)
         {
-            Console.WriteLine($"Found .csproj file: {files[0]}");
             return executionPath;
         }
 
@@ -215,7 +196,6 @@ internal class Program
         }
     }
 
-    //a method that returns the actual version of the found csproj file
     private static string GetCsprojVersion(string csprojFilePath)
     {
         string csprojContent = File.ReadAllText(csprojFilePath);

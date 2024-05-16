@@ -14,7 +14,11 @@ To install the Version Incrementer Tool, follow these steps:
 
 ``` zsh
 # install as dotnet tool
-dotnet tool install --global VersionIncrementerTool --version 0.1.5
+dotnet tool install --global VersionIncrementerTool --version 0.2.0
+
+# install as local tool
+dotnet new tool-manifest
+dotnet tool install --local VersionIncrementerTool --version 0.2.0
 ```
 
 ## Usage
@@ -23,6 +27,15 @@ To use the Version Incrementer Tool, run the following command in your project d
 
 ``` zsh
 dotnet vit <Major|Minor|Patch>
+```
+
+## Development
+
+To build the project, run the following command:
+``` zsh
+dotnet build -c Release
+dotnet pack -c Release
+dotnet tool install versionincrementertool --add-source "/[devpath]/VersionIncrementerTool/src/nupkg/"
 ```
 
 ## License
