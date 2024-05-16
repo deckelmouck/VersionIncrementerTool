@@ -24,6 +24,10 @@ internal class Program
             if (foundCsproj != string.Empty)
             {
                 Console.WriteLine($"Found .csproj file: {foundCsproj}");
+
+                //print the actual version of the found csproj file
+                string version = GetCsprojVersion(foundCsproj);
+                Console.WriteLine($"Actual version: {version}");
             }
             else
             {
@@ -44,7 +48,7 @@ internal class Program
         
         Console.WriteLine($"Local BaseDirectory path: {executionPath}");
         
-        string csprojFilePath = GetCsprojFilePath(executionPath);
+        string csprojFilePath = GetDirectoryOfCsprojFile(executionPath);
 
 #if DEBUG
         //use only for debugging
@@ -84,7 +88,7 @@ internal class Program
         } 
 
         //search *.csproj file in the directory
-        string[] files = Directory.GetFiles(csprojFilePath, "*.csproj", SearchOption.AllDirectories);
+        string[] files = Directory.GetFiles(csprojFilePath, "*.csproj", SearchOption.TopDirectoryOnly);
         if (files.Length > 0)
         {
             csprojFilePath = files[0];
@@ -143,12 +147,83 @@ internal class Program
         }
     }
 
+    // private static string GetCsprojFilePath(string executionPath)
+    // {
+    //     string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.TopDirectoryOnly);
+    //     if (files.Length > 0)
+    //     {
+    //         return files[0];
+    //     }
+    //     return string.Empty;
+    // }
+
+    //search the actual directory for a csproj file and not with the filename, if not found, return empty string
+    private static string GetDirectoryOfCsprojFile(string executionPath)
+    {
+        Console.WriteLine($"Searching for .csproj file in the directory: {executionPath}");
+
+        string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.TopDirectoryOnly);
+        if (files.Length > 0)
+        {
+            Console.WriteLine($"Found .csproj file: {files[0]}");
+            return executionPath;
+        }
+
+        string currentDirectory = executionPath;
+        while (true)
+        {
+            var parentDirectory = Directory.GetParent(currentDirectory);
+            if (parentDirectory == null)
+            {
+                return string.Empty;
+            }
+
+            var csprojFiles = Directory.GetFiles(parentDirectory.FullName, "*.csproj", SearchOption.TopDirectoryOnly);
+            if (csprojFiles.Length > 0)
+            {
+                return parentDirectory.FullName;
+            }
+
+            currentDirectory = parentDirectory.FullName;
+        }
+    }
+
     private static string GetCsprojFilePath(string executionPath)
     {
         string[] files = Directory.GetFiles(executionPath, "*.csproj", SearchOption.TopDirectoryOnly);
         if (files.Length > 0)
         {
             return files[0];
+        }
+
+        string currentDirectory = executionPath;
+        while (true)
+        {
+            var parentDirectory = Directory.GetParent(currentDirectory);
+            if (parentDirectory == null)
+            {
+                return string.Empty;
+            }
+
+            var csprojFiles = Directory.GetFiles(parentDirectory.FullName, "*.csproj", SearchOption.TopDirectoryOnly);
+            if (csprojFiles.Length > 0)
+            {
+                return csprojFiles[0];
+            }
+
+            currentDirectory = parentDirectory.FullName;
+        }
+    }
+
+    //a method that returns the actual version of the found csproj file
+    private static string GetCsprojVersion(string csprojFilePath)
+    {
+        string csprojContent = File.ReadAllText(csprojFilePath);
+        string pattern = "<Version>(.*?)</Version>";
+        Match match = Regex.Match(csprojContent, pattern);
+        if (match.Success)
+        {
+            return match.Groups[1].Value;
         }
         return string.Empty;
     }

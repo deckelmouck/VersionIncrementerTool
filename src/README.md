@@ -16,6 +16,15 @@ To use the Version Incrementer Tool, run the following command in your project d
 dotnet vit <Major|Minor|Patch>
 ```
 
+## Development
+
+To build the project, run the following command:
+``` zsh
+dotnet build -c Release
+dotnet pack -c Release
+dotnet tool install versionincrementertool --add-source "/[devpath]/VersionIncrementerTool/src/nupkg/"
+```
+
 ## Disclaimer
 
 This tool is provided as-is, without any warranty or guarantee of any kind. Use at your own risk.
