@@ -6,6 +6,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Version>0.2.1</Version>
+    <Authors>deckelmouck</Authors>
+    <Description>Tool to increment version numbers in .csproj files</Description>
+    <RepositoryUrl>https://github.com/deckelmouck/VersionIncrementerTool</RepositoryUrl>
+    <Copyright>deckelmouck 2024</Copyright>
+    <PackageTags>versioning dotnet csproj .NET semver2.0</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>vit</ToolCommandName>
