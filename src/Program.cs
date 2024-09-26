@@ -1,9 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-using System.Diagnostics;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using Microsoft.Extensions.Configuration;
-
+﻿using System.Text.RegularExpressions;
 
 internal class Program
 {
