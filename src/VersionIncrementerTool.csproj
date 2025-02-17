@@ -9,7 +9,7 @@
     <Authors>deckelmouck</Authors>
     <Description>Tool to increment version numbers in .csproj files</Description>
     <RepositoryUrl>https://github.com/deckelmouck/VersionIncrementerTool</RepositoryUrl>
-    <Copyright>deckelmouck 2024</Copyright>
+    <Copyright>deckelmouck 2025</Copyright>
     <PackageTags>versioning dotnet csproj .NET semver2.0</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackAsTool>true</PackAsTool>
