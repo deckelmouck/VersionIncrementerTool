@@ -22,7 +22,7 @@ internal class Program
 
                 //print the actual version of the found csproj file
                 string version = GetCsprojVersion(foundCsproj);
-                Console.WriteLine($"Actual version: {version}");
+                Console.WriteLine($"Current version: {version}");
             }
             else
             {
