@@ -1,9 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-using System.Diagnostics;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using Microsoft.Extensions.Configuration;
-
+﻿using System.Text.RegularExpressions;
 
 internal class Program
 {
@@ -27,7 +22,7 @@ internal class Program
 
                 //print the actual version of the found csproj file
                 string version = GetCsprojVersion(foundCsproj);
-                Console.WriteLine($"Actual version: {version}");
+                Console.WriteLine($"Current version: {version}");
             }
             else
             {
