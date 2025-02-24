@@ -38,6 +38,11 @@ dotnet pack -c Release
 dotnet tool install versionincrementertool --add-source "/[devpath]/VersionIncrementerTool/src/nupkg/"
 ```
 
+Upload to NuGet.org verified
+``` zsh
+dotnet nuget push VersionIncrementerTool.(Version).nupkg --api-key <your_api_key> --source https://api.nuget.org/v3/index.json
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
