@@ -14,11 +14,11 @@ To install the Version Incrementer Tool, follow these steps:
 
 ``` zsh
 # install as dotnet tool
-dotnet tool install --global VersionIncrementerTool --version 0.2.0
+dotnet tool install --global VersionIncrementerTool --version 0.3.0
 
 # install as local tool
 dotnet new tool-manifest
-dotnet tool install --local VersionIncrementerTool --version 0.2.0
+dotnet tool install --local VersionIncrementerTool --version 0.3.0
 ```
 
 ## Usage
