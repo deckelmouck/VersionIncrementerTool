@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-internal class Program
+﻿internal class Program
 {
     private static string execPath = string.Empty;
 

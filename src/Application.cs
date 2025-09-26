@@ -1,4 +1,3 @@
-
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
@@ -6,7 +5,7 @@ public class Application
 {
     #region private fields
     private string _executionPath = string.Empty;
-    private string[] _args;
+    private readonly string[] _args;
     private Part _targetPart;
     private string _csproj = string.Empty;
     #endregion
@@ -43,16 +42,16 @@ public class Application
         if (_targetPart == Part.None)
         {
 
-            Exit(1);
+            Application.Exit(1);
             return;
         }
 
-        _csproj = GetCsprojFile(_executionPath);
+        _csproj = Application.GetCsprojFile(_executionPath);
 
         if (_csproj == null || _csproj.Equals(string.Empty))
         {
             Console.WriteLine($"there is no *.csproj file in '{_executionPath}'");
-            Exit(-1);
+            Application.Exit(-1);
             return;
         }
         else
@@ -60,15 +59,14 @@ public class Application
             Console.WriteLine($"csproj-file: {_csproj}");
         }
         
-        if(UpdateVersionInCsproj(_csproj, _targetPart))
+        if(Application.UpdateVersionInCsproj(_csproj, _targetPart))
         {
-            Exit(0);
+            Application.Exit(0);
         }
         else
         {
-            Exit(-1);
+            Application.Exit(-1);
         }
-        
     }
 
     private Part ParseInputArgs(string[] args)
@@ -80,7 +78,7 @@ public class Application
 
         if (args.Length == 1)
         {
-            return ParseOne(_args);
+            return Application.ParseOne(_args);
         }
         else
         {
@@ -89,7 +87,7 @@ public class Application
         }
     }
 
-    private Part ParseOne(string[] args)
+    private static Part ParseOne(string[] args)
     {
         switch (args[0].ToLower())
         {
@@ -107,7 +105,7 @@ public class Application
         }        
     }
 
-    private string GetCsprojFile(string csprojFilePath)
+    private static string GetCsprojFile(string csprojFilePath)
     {
         string[] files = Directory.GetFiles(csprojFilePath, "*.csproj", SearchOption.TopDirectoryOnly);
         if (files.Length > 0)
@@ -118,7 +116,7 @@ public class Application
         return string.Empty;
     }
 
-    private bool UpdateVersionInCsproj(string csproj, Part targetPart)
+    private static bool UpdateVersionInCsproj(string csproj, Part targetPart)
     {
         string csprojContent = File.ReadAllText(csproj);
         string pattern = "<Version>(.*?)</Version>";
@@ -167,7 +165,7 @@ public class Application
         }
     }
 
-    private void Exit(int exitCode)
+    private static void Exit(int exitCode)
     {
         ConsoleColor consoleColor = Console.ForegroundColor;
         if(exitCode == 0)
