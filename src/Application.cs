@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 public class Application
 {
     #region private fields
+    private const string DefaultVersion = "0.0.0";
     private const string VersionPattern = "<Version>(.*?)</Version>";
     // x.y.z with optional pre-release (-beta1) and build metadata (+abc) suffix
     private static readonly Regex SemVerRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$");
@@ -153,53 +154,88 @@ public class Application
     {
         string csprojContent = File.ReadAllText(csproj);
         Match match = Regex.Match(csprojContent, VersionPattern);
+
+        // without a <Version> tag the increment starts at 0.0.0
+        string version = match.Success ? match.Groups[1].Value : DefaultVersion;
         if (match.Success)
         {
-            string version = match.Groups[1].Value;
             Console.WriteLine($"old version {version}");
-
-            Match semVer = SemVerRegex.Match(version.Trim());
-            if (!semVer.Success
-                || !int.TryParse(semVer.Groups[1].Value, out int major)
-                || !int.TryParse(semVer.Groups[2].Value, out int minor)
-                || !int.TryParse(semVer.Groups[3].Value, out int patch))
-            {
-                Console.WriteLine($"unsupported version format '{version}'. Supported formats: x.y.z, x.y.z-suffix");
-                return false;
-            }
-
-            switch (targetPart)
-            {
-                case Part.Major:
-                    major++;
-                    minor = 0;
-                    patch = 0;
-                    break;
-                case Part.Minor:
-                    minor++;
-                    patch = 0;
-                    break;
-                case Part.Patch:
-                    patch++;
-                    break;
-                default:
-                    Console.WriteLine($"increment version with target part {targetPart} not yet implemented");
-                    return false;
-            }
-
-            string newVersion = $"{major}.{minor}.{patch}";
-
-            string newCsprojContent = csprojContent.Replace($"<Version>{version}</Version>", $"<Version>{newVersion}</Version>");
-            File.WriteAllText(csproj, newCsprojContent);
-
-            Console.WriteLine($"version updated to {newVersion}");
-            return true;
         }
         else
         {
-            Console.WriteLine("no <Version> tag found in the .csproj file.");
+            Console.WriteLine($"no <Version> tag found in the .csproj file, starting at {DefaultVersion}");
+        }
+
+        Match semVer = SemVerRegex.Match(version.Trim());
+        if (!semVer.Success
+            || !int.TryParse(semVer.Groups[1].Value, out int major)
+            || !int.TryParse(semVer.Groups[2].Value, out int minor)
+            || !int.TryParse(semVer.Groups[3].Value, out int patch))
+        {
+            Console.WriteLine($"unsupported version format '{version}'. Supported formats: x.y.z, x.y.z-suffix");
             return false;
         }
+
+        switch (targetPart)
+        {
+            case Part.Major:
+                major++;
+                minor = 0;
+                patch = 0;
+                break;
+            case Part.Minor:
+                minor++;
+                patch = 0;
+                break;
+            case Part.Patch:
+                patch++;
+                break;
+            default:
+                Console.WriteLine($"increment version with target part {targetPart} not yet implemented");
+                return false;
+        }
+
+        string newVersion = $"{major}.{minor}.{patch}";
+        string newCsprojContent;
+
+        if (match.Success)
+        {
+            newCsprojContent = csprojContent.Replace($"<Version>{version}</Version>", $"<Version>{newVersion}</Version>");
+        }
+        else
+        {
+            string? inserted = Application.InsertVersionTag(csprojContent, newVersion);
+            if (inserted == null)
+            {
+                Console.WriteLine("no <PropertyGroup> found in the .csproj file, cannot add a <Version> tag.");
+                return false;
+            }
+            newCsprojContent = inserted;
+            Console.WriteLine("added <Version> tag to the first <PropertyGroup>");
+        }
+
+        File.WriteAllText(csproj, newCsprojContent);
+
+        Console.WriteLine($"version updated to {newVersion}");
+        return true;
+    }
+
+    // adds the tag as first child of the first <PropertyGroup> without attributes (no conditional group)
+    private static string? InsertVersionTag(string csprojContent, string version)
+    {
+        Match group = Regex.Match(csprojContent, @"<PropertyGroup\s*>");
+        if (!group.Success)
+        {
+            return null;
+        }
+
+        string lineBreak = csprojContent.Contains("\r\n") ? "\r\n" : "\n";
+        int insertAt = group.Index + group.Length;
+
+        Match child = Regex.Match(csprojContent.Substring(insertAt), @"^[ \t]*\r?\n([ \t]*)\S");
+        string indent = child.Success ? child.Groups[1].Value : "    ";
+
+        return csprojContent.Insert(insertAt, $"{lineBreak}{indent}<Version>{version}</Version>");
     }
 
     private static void Exit(int exitCode)
