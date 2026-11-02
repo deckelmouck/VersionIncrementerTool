@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 public class Application
 {
     #region private fields
+    private const string TagOption = "--tag";
     private const string DefaultVersion = "0.0.0";
     private const string VersionPattern = "<Version>(.*?)</Version>";
     // x.y.z with optional pre-release (-beta1) and build metadata (+abc) suffix
@@ -11,6 +12,7 @@ public class Application
     private string _executionPath = string.Empty;
     private readonly string[] _args;
     private Part _targetPart;
+    private bool _createGitTag;
     private string _csproj = string.Empty;
     #endregion
 
@@ -70,8 +72,14 @@ public class Application
             Console.WriteLine($"csproj-file: {_csproj}");
         }
         
-        if(Application.UpdateVersionInCsproj(_csproj, _targetPart))
+        if(Application.UpdateVersionInCsproj(_csproj, _targetPart, out string newVersion))
         {
+            if (_createGitTag && !Application.CreateGitTag(_executionPath, _csproj, newVersion))
+            {
+                Application.Exit(-1);
+                return;
+            }
+
             Application.Exit(0);
         }
         else
@@ -105,14 +113,33 @@ public class Application
 
     private Part ParseInputArgs(string[] args)
     {
-        if (args.Length == 0)
+        List<string> parts = new List<string>();
+
+        foreach (string arg in args)
+        {
+            if (arg.Equals(TagOption, StringComparison.OrdinalIgnoreCase))
+            {
+                _createGitTag = true;
+            }
+            else if (arg.StartsWith("-"))
+            {
+                Console.WriteLine($"Unknown option '{arg}'.");
+                return Part.None;
+            }
+            else
+            {
+                parts.Add(arg);
+            }
+        }
+
+        if (parts.Count == 0)
         {
             return Part.None;
         }
 
-        if (args.Length == 1)
+        if (parts.Count == 1)
         {
-            return Application.ParseOne(_args);
+            return Application.ParseOne(parts.ToArray());
         }
         else
         {
@@ -148,8 +175,9 @@ public class Application
         return string.Empty;
     }
 
-    private static bool UpdateVersionInCsproj(string csproj, Part targetPart)
+    private static bool UpdateVersionInCsproj(string csproj, Part targetPart, out string newVersion)
     {
+        newVersion = string.Empty;
         string csprojContent = File.ReadAllText(csproj);
         Match match = Regex.Match(csprojContent, VersionPattern);
 
@@ -193,7 +221,7 @@ public class Application
                 return false;
         }
 
-        string newVersion = $"{major}.{minor}.{patch}";
+        newVersion = $"{major}.{minor}.{patch}";
         string newCsprojContent;
 
         if (match.Success)
@@ -236,6 +264,63 @@ public class Application
         return csprojContent.Insert(insertAt, $"{lineBreak}{indent}<Version>{version}</Version>");
     }
 
+    // creates a lightweight tag named like the new version on the current commit
+    private static bool CreateGitTag(string workingDirectory, string csproj, string version)
+    {
+        if (!Application.RunGit(workingDirectory, out string error, "rev-parse", "--is-inside-work-tree"))
+        {
+            Console.WriteLine($"version updated, but the git tag was not created: not a git repository or git is not available ({error})");
+            return false;
+        }
+
+        if (!Application.RunGit(workingDirectory, out error, "tag", version))
+        {
+            Console.WriteLine($"version updated, but the git tag '{version}' was not created: {error}");
+            return false;
+        }
+
+        Console.WriteLine($"git tag created: {version}");
+
+        // the tag points to the current commit, which does not contain the new version yet
+        if (Application.RunGit(workingDirectory, out string status, "status", "--porcelain", "--", csproj) && status.Length > 0)
+        {
+            Console.WriteLine($"note: '{Path.GetFileName(csproj)}' has uncommitted changes, so the tag does not point to a commit with the new version. Commit the change and move the tag with 'git tag -f {version}' if needed.");
+        }
+
+        return true;
+    }
+
+    // runs git and returns true on exit code 0; output is stdout on success, otherwise stderr
+    private static bool RunGit(string workingDirectory, out string output, params string[] arguments)
+    {
+        ProcessStartInfo startInfo = new ProcessStartInfo("git")
+        {
+            WorkingDirectory = workingDirectory,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        foreach (string argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        try
+        {
+            using Process process = Process.Start(startInfo)!;
+            string stdout = process.StandardOutput.ReadToEnd().Trim();
+            string stderr = process.StandardError.ReadToEnd().Trim();
+            process.WaitForExit();
+
+            output = process.ExitCode == 0 ? stdout : stderr;
+            return process.ExitCode == 0;
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            output = ex.Message;
+            return false;
+        }
+    }
+
     private static void Exit(int exitCode)
     {
         ConsoleColor consoleColor = Console.ForegroundColor;
@@ -246,7 +331,7 @@ public class Application
         }
         else if(exitCode == 1)
         {
-            Console.WriteLine("how to use: dotnet vit <Major|Minor|Patch>");
+            Console.WriteLine("how to use: dotnet vit <Major|Minor|Patch> [--tag]");
         }
         else
         {
