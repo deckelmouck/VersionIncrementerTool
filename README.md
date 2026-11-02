@@ -42,6 +42,11 @@ dotnet vit <Major|Minor|Patch>
 
 ## Development
 
+To run the tests (xUnit, project in `test/VersionIncrementerTool.Tests`, example csproj files in `test/` are used as fixtures):
+``` zsh
+dotnet test src/VersionIncrementerTool.sln
+```
+
 To build the project, run the following command:
 ``` zsh
 dotnet build -c Release
