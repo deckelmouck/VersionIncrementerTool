@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 public class Application
 {
     #region private fields
+    private const string VersionPattern = "<Version>(.*?)</Version>";
     private string _executionPath = string.Empty;
     private readonly string[] _args;
     private Part _targetPart;
@@ -36,6 +37,13 @@ public class Application
     {
         Init();
 
+        if (_args.Length == 0)
+        {
+            ShowInfo();
+            Application.Exit(1);
+            return;
+        }
+
         _targetPart = ParseInputArgs(_args);
         Console.WriteLine($"your target: {_targetPart}");
 
@@ -66,6 +74,29 @@ public class Application
         else
         {
             Application.Exit(-1);
+        }
+    }
+
+    private void ShowInfo()
+    {
+        string csproj = Application.GetCsprojFile(_executionPath);
+
+        if (csproj.Equals(string.Empty))
+        {
+            Console.WriteLine($"there is no *.csproj file in '{_executionPath}'");
+            return;
+        }
+
+        Console.WriteLine($"csproj-file: {csproj}");
+
+        Match match = Regex.Match(File.ReadAllText(csproj), VersionPattern);
+        if (match.Success)
+        {
+            Console.WriteLine($"current version: {match.Groups[1].Value}");
+        }
+        else
+        {
+            Console.WriteLine("no <Version> tag found in the .csproj file.");
         }
     }
 
@@ -119,8 +150,7 @@ public class Application
     private static bool UpdateVersionInCsproj(string csproj, Part targetPart)
     {
         string csprojContent = File.ReadAllText(csproj);
-        string pattern = "<Version>(.*?)</Version>";
-        Match match = Regex.Match(csprojContent, pattern);
+        Match match = Regex.Match(csprojContent, VersionPattern);
         if (match.Success)
         {
             string version = match.Groups[1].Value;
