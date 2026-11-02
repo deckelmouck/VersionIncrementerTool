@@ -59,6 +59,41 @@ public class ApplicationTests : IDisposable
         Assert.Contains("update successful", output);
     }
 
+    [Theory]
+    [InlineData("patch", "1.2.3-beta1", "1.2.4")]
+    [InlineData("minor", "1.2.3-rc.1", "1.3.0")]
+    [InlineData("major", "1.2.3+build5", "2.0.0")]
+    [InlineData("patch", "1.0.0-beta.2+sha.abc", "1.0.1")]
+    public void RemovesPreReleaseAndBuildSuffixWhenIncrementing(string part, string before, string after)
+    {
+        string path = WriteCsproj(before);
+
+        string output = Run(part);
+
+        Assert.Equal(Csproj(after), File.ReadAllText(path));
+        Assert.Contains("update successful", output);
+    }
+
+    [Theory]
+    [InlineData("1.2")]
+    [InlineData("1.2.3.4")]
+    [InlineData("1")]
+    [InlineData("a.b.c")]
+    [InlineData("1.2.x")]
+    [InlineData("1.2.3-")]
+    [InlineData("")]
+    [InlineData("99999999999.0.0")]
+    public void RejectsUnsupportedVersionFormatAndKeepsFile(string version)
+    {
+        string path = WriteCsproj(version);
+
+        string output = Run("patch");
+
+        Assert.Equal(Csproj(version), File.ReadAllText(path));
+        Assert.Contains("unsupported version format", output);
+        Assert.Contains("update failed", output);
+    }
+
     [Fact]
     public void ReportsErrorWhenNoCsprojExists()
     {
