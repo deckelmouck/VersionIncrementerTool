@@ -35,7 +35,8 @@ dotnet vit <Major|Minor|Patch>
 
 ### Limitations
 
-- Only the version format `x.y.z` is supported (e.g. `1.2.3`). Versions like `1.2` or `1.2.3-beta` are not supported.
+- Supported version formats are `x.y.z` with an optional pre-release or build suffix (e.g. `1.2.3`, `1.2.3-beta1`, `1.2.3+build5`). The suffix is removed when the version is incremented (`1.2.3-beta1` + `patch` = `1.2.4`).
+- Other formats like `1.2` or `1.2.3.4` are rejected with an error message and the file stays unchanged.
 - Only the first `*.csproj` file in the current directory is used.
 - Only a single argument is accepted.
 - `Build` is accepted as an argument but not implemented yet.
