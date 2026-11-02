@@ -5,6 +5,8 @@ public class Application
 {
     #region private fields
     private const string VersionPattern = "<Version>(.*?)</Version>";
+    // x.y.z with optional pre-release (-beta1) and build metadata (+abc) suffix
+    private static readonly Regex SemVerRegex = new Regex(@"^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$");
     private string _executionPath = string.Empty;
     private readonly string[] _args;
     private Part _targetPart;
@@ -155,11 +157,16 @@ public class Application
         {
             string version = match.Groups[1].Value;
             Console.WriteLine($"old version {version}");
-            string[] versionParts = version.Split('.');
 
-            int major = int.Parse(versionParts[0]);
-            int minor = int.Parse(versionParts[1]);
-            int patch = int.Parse(versionParts[2]);
+            Match semVer = SemVerRegex.Match(version.Trim());
+            if (!semVer.Success
+                || !int.TryParse(semVer.Groups[1].Value, out int major)
+                || !int.TryParse(semVer.Groups[2].Value, out int minor)
+                || !int.TryParse(semVer.Groups[3].Value, out int patch))
+            {
+                Console.WriteLine($"unsupported version format '{version}'. Supported formats: x.y.z, x.y.z-suffix");
+                return false;
+            }
 
             switch (targetPart)
             {
