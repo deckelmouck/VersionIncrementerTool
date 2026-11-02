@@ -125,15 +125,14 @@ public class ApplicationTests : IDisposable
     }
 
     [Fact]
-    public void DoesNotAddVersionTagForNotImplementedPart()
+    public void DoesNotAddVersionTagForInvalidPart()
     {
         string path = WriteCsproj(null);
 
-        string output = Run("build");
+        string output = Run("foo");
 
         Assert.Equal(Csproj(null), File.ReadAllText(path));
-        Assert.Contains("not yet implemented", output);
-        Assert.Contains("update failed", output);
+        Assert.Contains("Invalid version part", output);
     }
 
     [Fact]
@@ -207,12 +206,14 @@ public class ApplicationTests : IDisposable
         Assert.Contains("how to use: dotnet vit", output);
     }
 
-    [Fact]
-    public void RejectsInvalidPart()
+    [Theory]
+    [InlineData("foo")]
+    [InlineData("build")]
+    public void RejectsInvalidPart(string part)
     {
         string path = WriteCsproj("1.2.3");
 
-        string output = Run("foo");
+        string output = Run(part);
 
         Assert.Equal(Csproj("1.2.3"), File.ReadAllText(path));
         Assert.Contains("Invalid version part", output);
@@ -227,18 +228,6 @@ public class ApplicationTests : IDisposable
 
         Assert.Equal(Csproj("1.2.3"), File.ReadAllText(path));
         Assert.Contains("multiple arguments are not implemented yet", output);
-    }
-
-    [Fact]
-    public void BuildPartIsNotImplementedYet()
-    {
-        string path = WriteCsproj("1.2.3");
-
-        string output = Run("build");
-
-        Assert.Equal(Csproj("1.2.3"), File.ReadAllText(path));
-        Assert.Contains("not yet implemented", output);
-        Assert.Contains("update failed", output);
     }
 
     [Fact]
