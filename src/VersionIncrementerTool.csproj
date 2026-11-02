@@ -9,7 +9,7 @@
     <Authors>deckelmouck</Authors>
     <Description>Tool to increment version numbers in .csproj files</Description>
     <RepositoryUrl>https://github.com/deckelmouck/VersionIncrementerTool</RepositoryUrl>
-    <Copyright>deckelmouck 2025</Copyright>
+    <Copyright>deckelmouck 2025-2026</Copyright>
     <PackageTags>versioning dotnet csproj .NET semver2.0</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackAsTool>true</PackAsTool>
@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" Link="README.md" />
   </ItemGroup>
   <ItemGroup>
     <None Include="LICENSE.md" Pack="true" PackagePath="\" />
