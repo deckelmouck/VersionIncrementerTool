@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Xml.Linq;
 
 public class ApplicationTests : IDisposable
@@ -40,6 +41,36 @@ public class ApplicationTests : IDisposable
 
     private static string? FirstGroupVersion(string path) =>
         XDocument.Load(path).Root!.Element("PropertyGroup")?.Element("Version")?.Value;
+
+    private string Git(params string[] args)
+    {
+        var startInfo = new ProcessStartInfo("git")
+        {
+            WorkingDirectory = _workDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        foreach (string arg in new[] { "-c", "user.name=test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", "-c", "tag.gpgsign=false" }.Concat(args))
+        {
+            startInfo.ArgumentList.Add(arg);
+        }
+        using var process = Process.Start(startInfo)!;
+        string output = process.StandardOutput.ReadToEnd().Trim();
+        process.StandardError.ReadToEnd();
+        process.WaitForExit();
+        Assert.Equal(0, process.ExitCode);
+        return output;
+    }
+
+    // git repository with the csproj committed, so the working tree is clean
+    private string InitRepoWithCsproj(string version)
+    {
+        string path = WriteCsproj(version);
+        Git("init", "-q");
+        Git("add", ".");
+        Git("commit", "-q", "-m", "init");
+        return path;
+    }
 
     private string Run(params string[] args)
     {
@@ -262,5 +293,89 @@ public class ApplicationTests : IDisposable
         Assert.Equal("0.0.1", FirstGroupVersion(target));
         // the example files use CRLF, the inserted line must not introduce a lone LF
         Assert.DoesNotContain("\n", content.Replace("\r\n", ""));
+    }
+
+    [Theory]
+    [InlineData("--tag", "patch")]
+    [InlineData("patch", "--tag")]
+    [InlineData("PATCH", "--TAG")]
+    public void CreatesGitTagWithNewVersion(params string[] args)
+    {
+        string path = InitRepoWithCsproj("1.2.3");
+
+        string output = Run(args);
+
+        Assert.Contains("<Version>1.2.4</Version>", File.ReadAllText(path));
+        Assert.Equal("1.2.4", Git("tag", "--list"));
+        Assert.Contains("git tag created: 1.2.4", output);
+        Assert.Contains("update successful", output);
+        // csproj is modified but not committed
+        Assert.Contains("uncommitted changes", output);
+    }
+
+    [Fact]
+    public void CreatesNoGitTagWithoutTagOption()
+    {
+        InitRepoWithCsproj("1.2.3");
+
+        Run("patch");
+
+        Assert.Equal("", Git("tag", "--list"));
+    }
+
+    [Fact]
+    public void ReportsErrorWhenTagCannotBeCreatedOutsideOfGitRepository()
+    {
+        string path = WriteCsproj("1.2.3");
+        // make sure the temp dir is not part of a repository
+        Environment.SetEnvironmentVariable("GIT_CEILING_DIRECTORIES", Path.GetDirectoryName(_workDir));
+
+        try
+        {
+            string output = Run("patch", "--tag");
+
+            Assert.Contains("<Version>1.2.4</Version>", File.ReadAllText(path));
+            Assert.Contains("git tag was not created", output);
+            Assert.Contains("update failed", output);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("GIT_CEILING_DIRECTORIES", null);
+        }
+    }
+
+    [Fact]
+    public void ReportsErrorWhenTagAlreadyExists()
+    {
+        InitRepoWithCsproj("1.2.3");
+        Git("tag", "1.2.4");
+
+        string output = Run("patch", "--tag");
+
+        Assert.Contains("'1.2.4' was not created", output);
+        Assert.Contains("update failed", output);
+    }
+
+    [Fact]
+    public void ShowsUsageWhenOnlyTagOptionIsGiven()
+    {
+        string path = InitRepoWithCsproj("1.2.3");
+
+        string output = Run("--tag");
+
+        Assert.Equal(Csproj("1.2.3"), File.ReadAllText(path));
+        Assert.Equal("", Git("tag", "--list"));
+        Assert.Contains("how to use: dotnet vit <Major|Minor|Patch> [--tag]", output);
+    }
+
+    [Fact]
+    public void RejectsUnknownOption()
+    {
+        string path = WriteCsproj("1.2.3");
+
+        string output = Run("patch", "--foo");
+
+        Assert.Equal(Csproj("1.2.3"), File.ReadAllText(path));
+        Assert.Contains("Unknown option '--foo'", output);
     }
 }

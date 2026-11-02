@@ -10,6 +10,7 @@ The Version Incrementer Tool is a small utility designed to automate the process
 - Show the current version of the csproj file
 - Add a missing `<Version>` tag automatically
 - Support pre-release and build suffixes (`1.2.3-beta1`, `1.2.3+build5`)
+- Optionally create a git tag with the new version
 
 ## Installation
 
@@ -34,7 +35,12 @@ dotnet vit
 
 # increment version
 dotnet vit <Major|Minor|Patch>
+
+# increment version and create a git tag with the new version (e.g. 1.2.4)
+dotnet vit <Major|Minor|Patch> --tag
 ```
+
+With `--tag` the tool runs `git tag <version>` on the current commit after the csproj was updated. It does not commit or push anything, so the tag points to the commit that is checked out when you run the tool. If the version change should be part of the tagged commit, commit it and move the tag with `git tag -f <version>`. If the tag cannot be created (no git repository, tag already exists), the csproj stays updated and an error is shown.
 
 ### Limitations
 
