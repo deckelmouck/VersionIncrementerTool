@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 public class ApplicationTests : IDisposable
 {
     private readonly string _workDir;
@@ -35,6 +37,9 @@ public class ApplicationTests : IDisposable
         File.WriteAllText(path, Csproj(version));
         return path;
     }
+
+    private static string? FirstGroupVersion(string path) =>
+        XDocument.Load(path).Root!.Element("PropertyGroup")?.Element("Version")?.Value;
 
     private string Run(params string[] args)
     {
@@ -103,16 +108,68 @@ public class ApplicationTests : IDisposable
         Assert.Contains("update failed", output);
     }
 
-    [Fact]
-    public void FailsAndKeepsFileWhenVersionTagIsMissing()
+    [Theory]
+    [InlineData("patch", "0.0.1")]
+    [InlineData("minor", "0.1.0")]
+    [InlineData("major", "1.0.0")]
+    public void AddsVersionTagStartingAtZeroWhenMissing(string part, string expected)
     {
         string path = WriteCsproj(null);
 
-        string output = Run("patch");
+        string output = Run(part);
+
+        Assert.Equal(expected, FirstGroupVersion(path));
+        Assert.Contains("TargetFramework", File.ReadAllText(path));
+        Assert.Contains("added <Version> tag", output);
+        Assert.Contains("update successful", output);
+    }
+
+    [Fact]
+    public void DoesNotAddVersionTagForNotImplementedPart()
+    {
+        string path = WriteCsproj(null);
+
+        string output = Run("build");
 
         Assert.Equal(Csproj(null), File.ReadAllText(path));
-        Assert.Contains("no <Version> tag found", output);
+        Assert.Contains("not yet implemented", output);
         Assert.Contains("update failed", output);
+    }
+
+    [Fact]
+    public void FailsAndKeepsFileWhenThereIsNoPropertyGroup()
+    {
+        string content = "<Project Sdk=\"Microsoft.NET.Sdk\">\n</Project>";
+        string path = Path.Combine(_workDir, "test.csproj");
+        File.WriteAllText(path, content);
+
+        string output = Run("patch");
+
+        Assert.Equal(content, File.ReadAllText(path));
+        Assert.Contains("no <PropertyGroup> found", output);
+        Assert.Contains("update failed", output);
+    }
+
+    [Fact]
+    public void AddsVersionTagToFirstUnconditionalPropertyGroup()
+    {
+        string path = Path.Combine(_workDir, "test.csproj");
+        File.WriteAllText(path, """
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+                <DefineConstants>DEBUG</DefineConstants>
+              </PropertyGroup>
+              <PropertyGroup>
+                <TargetFramework>net10.0</TargetFramework>
+              </PropertyGroup>
+            </Project>
+            """);
+
+        Run("patch");
+
+        var groups = XDocument.Load(path).Root!.Elements("PropertyGroup").ToList();
+        Assert.Null(groups[0].Element("Version"));
+        Assert.Equal("0.0.1", groups[1].Element("Version")?.Value);
     }
 
     [Fact]
@@ -203,16 +260,18 @@ public class ApplicationTests : IDisposable
     [InlineData("ClassLibrary.csproj")]
     [InlineData("ConsoleApplication.csproj")]
     [InlineData("WebApplication.csproj")]
-    public void ExampleCsprojWithoutVersionTagStaysUnchanged(string fixture)
+    [InlineData("WPFApplication.csproj")]
+    public void AddsVersionTagToExampleCsprojAndKeepsLineEndings(string fixture)
     {
         string source = Path.Combine(AppContext.BaseDirectory, "Fixtures", fixture);
         string target = Path.Combine(_workDir, fixture);
         File.Copy(source, target);
-        string before = File.ReadAllText(target);
 
-        string output = Run("patch");
+        Run("patch");
 
-        Assert.Equal(before, File.ReadAllText(target));
-        Assert.Contains("no <Version> tag found", output);
+        string content = File.ReadAllText(target);
+        Assert.Equal("0.0.1", FirstGroupVersion(target));
+        // the example files use CRLF, the inserted line must not introduce a lone LF
+        Assert.DoesNotContain("\n", content.Replace("\r\n", ""));
     }
 }

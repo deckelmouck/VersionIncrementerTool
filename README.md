@@ -23,7 +23,7 @@ dotnet tool install --local VersionIncrementerTool --version 0.4.0
 
 ## Usage
 
-To use the Version Incrementer Tool, run the following command in your project directory with a csproj file and version tag in the format `<version>x.y.z</version>`:
+To use the Version Incrementer Tool, run the following command in your project directory with a csproj file (a `<Version>x.y.z</Version>` tag is created if missing):
 
 ``` zsh
 # show the csproj file, its current version and usage info
@@ -37,6 +37,7 @@ dotnet vit <Major|Minor|Patch>
 
 - Supported version formats are `x.y.z` with an optional pre-release or build suffix (e.g. `1.2.3`, `1.2.3-beta1`, `1.2.3+build5`). The suffix is removed when the version is incremented (`1.2.3-beta1` + `patch` = `1.2.4`).
 - Other formats like `1.2` or `1.2.3.4` are rejected with an error message and the file stays unchanged.
+- If the csproj has no `<Version>` tag, it is added as first entry of the first `<PropertyGroup>` (without attributes) and incremented starting at `0.0.0` (`patch` = `0.0.1`, `minor` = `0.1.0`, `major` = `1.0.0`).
 - Only the first `*.csproj` file in the current directory is used.
 - Only a single argument is accepted.
 - `Build` is accepted as an argument but not implemented yet.
