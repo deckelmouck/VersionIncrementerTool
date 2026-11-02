@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <Authors>deckelmouck</Authors>
     <Description>Tool to increment version numbers in .csproj files</Description>
     <RepositoryUrl>https://github.com/deckelmouck/VersionIncrementerTool</RepositoryUrl>
