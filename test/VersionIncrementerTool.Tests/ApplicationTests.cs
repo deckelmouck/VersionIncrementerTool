@@ -81,13 +81,37 @@ public class ApplicationTests : IDisposable
     }
 
     [Fact]
-    public void ShowsUsageWithoutArguments()
+    public void ShowsUsageAndCurrentVersionWithoutArguments()
     {
         string path = WriteCsproj("1.2.3");
 
         string output = Run();
 
         Assert.Equal(Csproj("1.2.3"), File.ReadAllText(path));
+        Assert.Contains("csproj-file:", output);
+        Assert.Contains("test.csproj", output);
+        Assert.Contains("current version: 1.2.3", output);
+        Assert.Contains("how to use: dotnet vit", output);
+    }
+
+    [Fact]
+    public void ShowsUsageWithoutArgumentsWhenVersionTagIsMissing()
+    {
+        string path = WriteCsproj(null);
+
+        string output = Run();
+
+        Assert.Equal(Csproj(null), File.ReadAllText(path));
+        Assert.Contains("no <Version> tag found", output);
+        Assert.Contains("how to use: dotnet vit", output);
+    }
+
+    [Fact]
+    public void ShowsUsageWithoutArgumentsWhenNoCsprojExists()
+    {
+        string output = Run();
+
+        Assert.Contains("there is no *.csproj file", output);
         Assert.Contains("how to use: dotnet vit", output);
     }
 
