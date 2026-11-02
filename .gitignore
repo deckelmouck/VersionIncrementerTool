@@ -2,8 +2,9 @@
 *.*~
 project.lock.json
 .DS_Store
-*.pyc
 nupkg/
+*.nupkg
+*.snupkg
 
 .config
 
@@ -37,3 +38,12 @@ msbuild.wrn
 
 # Visual Studio 2015
 .vs/
+
+# Test results
+TestResults/
+
+# Logs
+*.log
+
+# Claude Code (personal settings)
+.claude/settings.local.json
