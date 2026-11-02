@@ -5,6 +5,7 @@ public class Application
 {
     #region private fields
     private const string TagOption = "--tag";
+    private const string CommitOption = "--commit";
     private const string DefaultVersion = "0.0.0";
     private const string VersionPattern = "<Version>(.*?)</Version>";
     // x.y.z with optional pre-release (-beta1) and build metadata (+abc) suffix
@@ -13,6 +14,7 @@ public class Application
     private readonly string[] _args;
     private Part _targetPart;
     private bool _createGitTag;
+    private bool _commitChanges;
     private string _csproj = string.Empty;
     #endregion
 
@@ -74,6 +76,12 @@ public class Application
         
         if(Application.UpdateVersionInCsproj(_csproj, _targetPart, out string newVersion))
         {
+            if (_commitChanges && !Application.CommitCsproj(_executionPath, _csproj, newVersion))
+            {
+                Application.Exit(-1);
+                return;
+            }
+
             if (_createGitTag && !Application.CreateGitTag(_executionPath, _csproj, newVersion))
             {
                 Application.Exit(-1);
@@ -120,6 +128,10 @@ public class Application
             if (arg.Equals(TagOption, StringComparison.OrdinalIgnoreCase))
             {
                 _createGitTag = true;
+            }
+            else if (arg.Equals(CommitOption, StringComparison.OrdinalIgnoreCase))
+            {
+                _commitChanges = true;
             }
             else if (arg.StartsWith("-"))
             {
@@ -264,6 +276,27 @@ public class Application
         return csprojContent.Insert(insertAt, $"{lineBreak}{indent}<Version>{version}</Version>");
     }
 
+    // commits only the changed csproj, other changes in the working tree stay untouched
+    private static bool CommitCsproj(string workingDirectory, string csproj, string version)
+    {
+        if (!Application.RunGit(workingDirectory, out string error, "rev-parse", "--is-inside-work-tree"))
+        {
+            Console.WriteLine($"version updated, but the changes were not committed: not a git repository or git is not available ({error})");
+            return false;
+        }
+
+        // add first so that a csproj which is not tracked yet can be committed as well
+        if (!Application.RunGit(workingDirectory, out error, "add", "--", csproj)
+            || !Application.RunGit(workingDirectory, out error, "commit", "-m", $"Bump version to {version}", "--", csproj))
+        {
+            Console.WriteLine($"version updated, but the changes were not committed: {error}");
+            return false;
+        }
+
+        Console.WriteLine($"changes committed: Bump version to {version}");
+        return true;
+    }
+
     // creates a lightweight tag named like the new version on the current commit
     private static bool CreateGitTag(string workingDirectory, string csproj, string version)
     {
@@ -331,7 +364,7 @@ public class Application
         }
         else if(exitCode == 1)
         {
-            Console.WriteLine("how to use: dotnet vit <Major|Minor|Patch> [--tag]");
+            Console.WriteLine("how to use: dotnet vit <Major|Minor|Patch> [--commit] [--tag]");
         }
         else
         {

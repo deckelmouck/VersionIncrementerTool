@@ -15,10 +15,27 @@ public class ApplicationTests : IDisposable
         _workDir = Directory.CreateTempSubdirectory("vit-tests-").FullName;
         Environment.CurrentDirectory = _workDir;
         Console.SetOut(_output);
+
+        // identity for commits made by the tool (child processes inherit the environment)
+        foreach ((string key, string value) in GitEnvironment)
+        {
+            Environment.SetEnvironmentVariable(key, value);
+        }
     }
+
+    private static readonly (string Key, string Value)[] GitEnvironment =
+    {
+        ("GIT_AUTHOR_NAME", "test"), ("GIT_AUTHOR_EMAIL", "test@example.com"),
+        ("GIT_COMMITTER_NAME", "test"), ("GIT_COMMITTER_EMAIL", "test@example.com"),
+        ("GIT_CONFIG_COUNT", "1"), ("GIT_CONFIG_KEY_0", "commit.gpgsign"), ("GIT_CONFIG_VALUE_0", "false"),
+    };
 
     public void Dispose()
     {
+        foreach ((string key, _) in GitEnvironment)
+        {
+            Environment.SetEnvironmentVariable(key, null);
+        }
         Console.SetOut(_originalOut);
         Environment.CurrentDirectory = _originalDir;
         Directory.Delete(_workDir, true);
@@ -365,7 +382,7 @@ public class ApplicationTests : IDisposable
 
         Assert.Equal(Csproj("1.2.3"), File.ReadAllText(path));
         Assert.Equal("", Git("tag", "--list"));
-        Assert.Contains("how to use: dotnet vit <Major|Minor|Patch> [--tag]", output);
+        Assert.Contains("how to use: dotnet vit <Major|Minor|Patch> [--commit] [--tag]", output);
     }
 
     [Fact]
@@ -377,5 +394,84 @@ public class ApplicationTests : IDisposable
 
         Assert.Equal(Csproj("1.2.3"), File.ReadAllText(path));
         Assert.Contains("Unknown option '--foo'", output);
+    }
+
+    [Fact]
+    public void CommitsOnlyTheCsproj()
+    {
+        string path = InitRepoWithCsproj("1.2.3");
+        string other = Path.Combine(_workDir, "other.txt");
+        File.WriteAllText(other, "a");
+        Git("add", "other.txt");
+        Git("commit", "-q", "-m", "other");
+        File.WriteAllText(other, "changed");
+
+        string output = Run("patch", "--commit");
+
+        Assert.Equal("Bump version to 1.2.4", Git("log", "-1", "--format=%s"));
+        Assert.Equal("", Git("status", "--porcelain", "--", path));
+        Assert.Equal("M other.txt", Git("status", "--porcelain", "--", "other.txt"));
+        Assert.Equal("", Git("tag", "--list"));
+        Assert.Contains("changes committed: Bump version to 1.2.4", output);
+        Assert.Contains("update successful", output);
+    }
+
+    [Theory]
+    [InlineData("--commit", "--tag")]
+    [InlineData("--tag", "--commit")]
+    public void CommitsBeforeTaggingSoTheTagContainsTheNewVersion(string first, string second)
+    {
+        InitRepoWithCsproj("1.2.3");
+
+        string output = Run("patch", first, second);
+
+        Assert.Equal(Git("rev-parse", "HEAD"), Git("rev-list", "-n", "1", "1.2.4"));
+        Assert.Contains("<Version>1.2.4</Version>", Git("show", "1.2.4:test.csproj"));
+        Assert.DoesNotContain("uncommitted changes", output);
+        Assert.Contains("update successful", output);
+    }
+
+    [Fact]
+    public void CommitsCsprojThatIsNotTrackedYet()
+    {
+        Git("init", "-q");
+        Git("commit", "-q", "--allow-empty", "-m", "init");
+        string path = WriteCsproj("1.2.3");
+
+        Run("patch", "--commit");
+
+        Assert.Equal("Bump version to 1.2.4", Git("log", "-1", "--format=%s"));
+        Assert.Equal("", Git("status", "--porcelain", "--", path));
+    }
+
+    [Fact]
+    public void ReportsErrorWhenCommitIsNotPossibleOutsideOfGitRepository()
+    {
+        string path = WriteCsproj("1.2.3");
+        Environment.SetEnvironmentVariable("GIT_CEILING_DIRECTORIES", Path.GetDirectoryName(_workDir));
+
+        try
+        {
+            string output = Run("patch", "--commit");
+
+            Assert.Contains("<Version>1.2.4</Version>", File.ReadAllText(path));
+            Assert.Contains("changes were not committed", output);
+            Assert.Contains("update failed", output);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("GIT_CEILING_DIRECTORIES", null);
+        }
+    }
+
+    [Fact]
+    public void DoesNotCommitWithoutCommitOption()
+    {
+        string path = InitRepoWithCsproj("1.2.3");
+
+        Run("patch");
+
+        Assert.Equal("init", Git("log", "-1", "--format=%s"));
+        Assert.NotEqual("", Git("status", "--porcelain", "--", path));
     }
 }

@@ -10,7 +10,7 @@ The Version Incrementer Tool is a small utility designed to automate the process
 - Show the current version of the csproj file
 - Add a missing `<Version>` tag automatically
 - Support pre-release and build suffixes (`1.2.3-beta1`, `1.2.3+build5`)
-- Optionally create a git tag with the new version
+- Optionally commit the change and create a git tag with the new version
 
 ## Installation
 
@@ -36,11 +36,21 @@ dotnet vit
 # increment version
 dotnet vit <Major|Minor|Patch>
 
+# increment version and commit the csproj (commit message: "Bump version to x.y.z")
+dotnet vit <Major|Minor|Patch> --commit
+
 # increment version and create a git tag with the new version (e.g. 1.2.4)
 dotnet vit <Major|Minor|Patch> --tag
+
+# increment version, commit and tag
+dotnet vit <Major|Minor|Patch> --commit --tag
 ```
 
-With `--tag` the tool runs `git tag <version>` on the current commit after the csproj was updated. It does not commit or push anything, so the tag points to the commit that is checked out when you run the tool. If the version change should be part of the tagged commit, commit it and move the tag with `git tag -f <version>`. If the tag cannot be created (no git repository, tag already exists), the csproj stays updated and an error is shown.
+The git options are independent and optional. The tool never pushes anything.
+
+- `--commit` commits only the changed csproj; other changes in your working tree stay untouched.
+- `--tag` runs `git tag <version>` on the current commit. Without `--commit` the version change is not committed yet, so the tag does not point to a commit with the new version (the tool prints a note). With `--commit` the commit is made first and the tag points to it.
+- If a git step fails (no git repository, tag already exists, ...), the csproj stays updated, an error is shown and no further git step is run.
 
 ### Limitations
 
