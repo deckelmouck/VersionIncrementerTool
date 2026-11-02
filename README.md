@@ -7,6 +7,9 @@ The Version Incrementer Tool is a small utility designed to automate the process
 
 - Increment version numbers in a project
 - Increment major, minor, or patch version numbers
+- Show the current version of the csproj file
+- Add a missing `<Version>` tag automatically
+- Support pre-release and build suffixes (`1.2.3-beta1`, `1.2.3+build5`)
 
 ## Installation
 
@@ -40,7 +43,6 @@ dotnet vit <Major|Minor|Patch>
 - If the csproj has no `<Version>` tag, it is added as first entry of the first `<PropertyGroup>` (without attributes) and incremented starting at `0.0.0` (`patch` = `0.0.1`, `minor` = `0.1.0`, `major` = `1.0.0`).
 - Only the first `*.csproj` file in the current directory is used.
 - Only a single argument is accepted.
-- `Build` is accepted as an argument but not implemented yet.
 
 ## Development
 

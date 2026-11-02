@@ -131,10 +131,8 @@ public class Application
                 return Part.Minor;
             case "patch":
                 return Part.Patch;
-            case "build":
-                return Part.Build;
             default:
-                Console.WriteLine("Invalid version part. Please provide 'Major', 'Minor', 'Patch' or 'Build'.");
+                Console.WriteLine("Invalid version part. Please provide 'Major', 'Minor' or 'Patch'.");
                 return Part.None;
         }        
     }
@@ -191,7 +189,7 @@ public class Application
                 patch++;
                 break;
             default:
-                Console.WriteLine($"increment version with target part {targetPart} not yet implemented");
+                Console.WriteLine($"unsupported version part {targetPart}");
                 return false;
         }
 
