@@ -28,7 +28,7 @@ public class Application
 
         _executionPath = Environment.CurrentDirectory;
         #if DEBUG
-        Debug.WriteLine($"excecution path: {_executionPath}");
+        Debug.WriteLine($"execution path: {_executionPath}");
         #endif
     }
 
@@ -171,7 +171,7 @@ public class Application
         if(exitCode == 0)
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("update successfull");
+            Console.WriteLine("update successful");
         }
         else if(exitCode == 1)
         {
